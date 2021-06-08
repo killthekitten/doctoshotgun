@@ -150,7 +150,7 @@ class CityNotFound(Exception):
 
 
 class Doctolib(LoginBrowser):
-    BASEURL = 'https://www.doctolib.fr'
+    BASEURL = 'https://www.doctolib.de'
 
     login = URL('/login.json', LoginPage)
     centers = URL(r'/vaccination-covid-19/(?P<where>\w+)', CentersPage)
@@ -189,7 +189,7 @@ class Doctolib(LoginBrowser):
         return self._logged
 
     def do_login(self):
-        self.open('https://www.doctolib.fr/sessions/new')
+        self.open('https://www.doctolib.de/sessions/new')
         try:
             self.login.go(json={'kind': 'patient',
                                 'username': self.username,
@@ -242,7 +242,7 @@ class Doctolib(LoginBrowser):
 
         center_page = self.center_booking.go(center_id=center_id)
         profile_id = self.page.get_profile_id()
-        motive_id = self.page.find_motive(r'1re.*(Pfizer|Moderna)')
+        motive_id = self.page.find_motive(r'Erstimpfung Covid-19 \(Moderna\)')
 
         if not motive_id:
             log('Unable to find mRNA motive')
@@ -376,7 +376,7 @@ class Doctolib(LoginBrowser):
         self.appointment_post.go(id=a_id, data=json.dumps(data), headers=headers, method='PUT')
 
         if 'redirection' in self.page.doc and not 'confirmed-appointment' in self.page.doc['redirection']:
-            log('  ├╴ Open %s to complete', 'https://www.doctolib.fr' + self.page.doc['redirection'])
+            log('  ├╴ Open %s to complete', 'https://www.doctolib.de' + self.page.doc['redirection'])
 
         self.appointment_post.go(id=a_id)
 
@@ -473,7 +473,9 @@ class Application:
 
         try:
             while True:
-                for center in docto.find_centers(cities, motives):
+                # centers = docto.find_centers(cities, motives)
+                centers = [{"url": "https://www.doctolib.de/institut/berlin/ciz-berlin-berlin", "city": "berlin", "name_with_title": "Corona Impfzentren - Berlin"}]
+                for center in centers:
                     if args.center:
                         if center['name_with_title'] not in args.center:
                             logging.debug("Skipping center '%s'", center['name_with_title'])
@@ -491,9 +493,7 @@ class Application:
                         log('💉 %s Congratulations.' % colored('Booked!', 'green', attrs=('bold',)))
                         return 0
 
-                    sleep(1)
-
-                sleep(5)
+                sleep(1)
         except CityNotFound as e:
             print('\n%s: City %s not found. For now Doctoshotgun works only in France.' % (colored('Error', 'red'), colored(e, 'yellow')))
             return 1
